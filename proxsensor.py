@@ -88,6 +88,7 @@ def try_collecting(conn):
         print("vector isn't ready yet")
 
     robot.disconnect()
+    logging.debug("Sleeping for {} seconds".format(sleep))
     time.sleep(sleep)
 
 
@@ -101,7 +102,10 @@ def main(logger=None):
     conn.execute(SCHEMA)
 
     while True:
-        try_collecting(conn)
+        try:
+            try_collecting(conn)
+        finally:
+            time.sleep(60)  # time for the error to clear up
 
 
 if __name__ == "__main__":
