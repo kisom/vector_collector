@@ -8,18 +8,19 @@ import pickle
 import sqlite3
 import time
 
-SCHEMA = r'''CREATE TABLE IF NOT EXISTS vector_data (
+SCHEMA = r"""CREATE TABLE IF NOT EXISTS vector_data (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     image       BLOB NOT NULL,
     prox        REAL NOT NULL
 )
-'''
+"""
+
 
 def read_image(robot):
     while not robot.camera.latest_image:
         time.sleep(0.1)
-    with open('latest_image', 'wb') as image_file:
+    with open("latest_image", "wb") as image_file:
         image = robot.camera.latest_image.tobytes()
         image_file.write(image)
         return image
@@ -27,39 +28,43 @@ def read_image(robot):
 
 def collect(robot, conn):
     while not robot.proximity.last_sensor_reading:
-        print('waiting for prox sensor')
+        print("waiting for prox sensor")
         time.sleep(1)
     pickled = read_image(robot)
     prox = robot.proximity.last_sensor_reading.distance.distance_mm
-    print('prox: ', prox)
-    conn.execute('INSERT INTO vector_data (image, prox) VALUES (?, ?)', (pickled, prox))
+    print("prox: ", prox)
+    conn.execute("INSERT INTO vector_data (image, prox) VALUES (?, ?)", (pickled, prox))
 
 
 def get_robot():
-    robot = anki_vector.Robot(default_logging=False, enable_vision_mode=True, enable_camera_feed=True)
+    robot = anki_vector.Robot(
+        default_logging=False, enable_vision_mode=True, enable_camera_feed=True
+    )
     robot.connect()
     return robot
+
 
 def should_read_sensors(robot):
     if not robot.status:
         print("Vector's status isn't available")
         return False
     if robot.status & 0x1000 != 0:
-        print('Vector is on his charger')
+        print("Vector is on his charger")
         return False
     if robot.status & 0x2000 != 0:
-        print('Vector is charging')
+        print("Vector is charging")
         return False
     return True
 
+
 def try_collecting(conn):
-    logging.info('connecting to vector')
+    logging.info("connecting to vector")
     try:
         robot = get_robot()
     except anki_vector.exceptions.VectorControlException:
         if robot:
             robot.disconnect()
-        print('failed to connect... will try again in an hour.')
+        print("failed to connect... will try again in an hour.")
         time.sleep(3600)
         return
 
@@ -71,18 +76,20 @@ def try_collecting(conn):
     if battery_state:
         print("battery voltage: {0}".format(battery_state.battery_volts))
 
-    print('connected!')
+    print("connected!")
+    sleep = 30
     if should_read_sensors(robot):
-        print('collecting sensor data')
-        collect(robot, conn) 
+        print("collecting sensor data")
+        collect(robot, conn)
         conn.commit()
-        print('letting vector roam around')
+        print("letting vector roam around")
     else:
+        sleep = 600
         print("vector isn't ready yet")
-        time.sleep(600) # give vector time to finish charging
 
     robot.disconnect()
-    time.sleep(30)
+    time.sleep(sleep)
+
 
 def main(logger=None):
     if not logger:
@@ -90,13 +97,14 @@ def main(logger=None):
     # add a console logger
     logger.addHandler(logging.StreamHandler())
 
-    conn = sqlite3.connect('vector.db')
+    conn = sqlite3.connect("vector.db")
     conn.execute(SCHEMA)
 
     while True:
         try_collecting(conn)
 
-if __name__ == '__main__':
-    logging.basicConfig(filename='vector.log',level=logging.DEBUG)
+
+if __name__ == "__main__":
+    logging.basicConfig(filename="vector.log", level=logging.DEBUG)
     logger = logging.getLogger()
     main(logger)
