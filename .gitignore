@@ -1,0 +1,5 @@
+__pycache__
+latest_image
+*.db
+*.db-journal
+*.log
