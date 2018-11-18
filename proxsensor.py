@@ -30,10 +30,15 @@ def collect(robot, conn):
     while not robot.proximity.last_sensor_reading:
         print("waiting for prox sensor")
         time.sleep(1)
-    pickled = read_image(robot)
+    image = read_image(robot)
+    if len(image) != 691200:
+        logging.error(
+            "image size of {} does not match expected size of {}".format(len(image))
+        )
+        return
     prox = robot.proximity.last_sensor_reading.distance.distance_mm
     print("prox: ", prox)
-    conn.execute("INSERT INTO vector_data (image, prox) VALUES (?, ?)", (pickled, prox))
+    conn.execute("INSERT INTO vector_data (image, prox) VALUES (?, ?)", (image, prox))
 
 
 def get_robot():
