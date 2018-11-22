@@ -66,15 +66,15 @@ def should_read_sensors(robot):
     return True
 
 
-def try_collecting(conn, robot):
+def try_collecting(conn):
     logging.info("connecting to vector")
     delay = 3600
     with anki_vector.Robot(
         default_logging=False, enable_vision_mode=True, enable_camera_feed=True
     ) as robot:
         delay = collector(conn, robot)
-    logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), sleep))
-    time.sleep(sleep)
+    logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), delay))
+    time.sleep(delay)
     
 
 def collector(conn, robot):
