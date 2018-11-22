@@ -54,9 +54,7 @@ def collect(robot, conn):
 
 
 def get_robot():
-    robot = anki_vector.Robot(
-        default_logging=False, enable_vision_mode=True, enable_camera_feed=True
-    )
+    robot = 
     robot.connect()
     return robot
 
@@ -74,17 +72,18 @@ def should_read_sensors(robot):
     return True
 
 
-def try_collecting(conn):
+def try_collecting(conn, robot):
     logging.info("connecting to vector")
-    robot = None
-    try:
-        robot = get_robot()
-    except anki_vector.exceptions.VectorControlException:
-        if robot:
-            robot.disconnect()
-        print("failed to connect... will try again in an hour.")
-        time.sleep(3600)
-        return
+    delay = 3600
+    with anki_vector.Robot(
+        default_logging=False, enable_vision_mode=True, enable_camera_feed=True
+    ) as robot:
+        delay = collector(conn, robot)
+    logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), sleep))
+    time.sleep(sleep)
+    
+
+def collector(conn, robot):
 
     # This sleep is needed to give the SDK time to get sensor readings and
     # the status ready. This is an arbitrary choice of timeout that seems to
@@ -107,10 +106,7 @@ def try_collecting(conn):
         prob_say(robot, 0.05, "I'm still charging.")
         print("vector isn't ready yet")
 
-    robot.disconnect()
-    logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), sleep))
-    time.sleep(sleep)
-
+    return sleep
 
 def main(logger=None):
     if not logger:
