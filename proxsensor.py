@@ -1,11 +1,13 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3.6
 
 # Collect image and proximity data from Vector.
 
 import anki_vector
 import logging
 import pickle
+import random
 import sqlite3
+import sys
 import time
 
 SCHEMA = r"""CREATE TABLE IF NOT EXISTS vector_data (
@@ -15,6 +17,16 @@ SCHEMA = r"""CREATE TABLE IF NOT EXISTS vector_data (
     prox        REAL NOT NULL
 )
 """
+
+def get_database_conn(path='vector.db'):
+    conn = sqlite3.connect("vector.db")
+    conn.execute(SCHEMA)
+    return conn
+
+
+def prob_say(robot, p, text):
+    if random.random() <= p:
+        robot.say_text(text)
 
 
 def read_image(robot):
@@ -64,6 +76,7 @@ def should_read_sensors(robot):
 
 def try_collecting(conn):
     logging.info("connecting to vector")
+    robot = None
     try:
         robot = get_robot()
     except anki_vector.exceptions.VectorControlException:
@@ -76,24 +89,26 @@ def try_collecting(conn):
     # This sleep is needed to give the SDK time to get sensor readings and
     # the status ready. This is an arbitrary choice of timeout that seems to
     # work.
+    print('getting robot state')
     time.sleep(0.25)
     battery_state = robot.get_battery_state()
     if battery_state:
         print("battery voltage: {0}".format(battery_state.battery_volts))
 
     print("connected!")
-    sleep = 30
+    sleep = 10
     if should_read_sensors(robot):
         print("collecting sensor data")
         collect(robot, conn)
         conn.commit()
         print("letting vector roam around")
     else:
-        sleep = 600
+        sleep = 180
+        prob_say(robot, 0.05, "I'm still charging.")
         print("vector isn't ready yet")
 
     robot.disconnect()
-    logging.debug("Sleeping for {} seconds".format(sleep))
+    logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), sleep))
     time.sleep(sleep)
 
 
@@ -103,17 +118,27 @@ def main(logger=None):
     # add a console logger
     logger.addHandler(logging.StreamHandler())
 
-    conn = sqlite3.connect("vector.db")
-    conn.execute(SCHEMA)
-
+    conn = get_database_conn()
     while True:
         try:
             try_collecting(conn)
+        except Exception as esc:
+            print(esc)
         finally:
             time.sleep(60)  # time for the error to clear up
 
 
+def count_records():
+    conn = get_database_conn()
+    result = conn.execute('select count(*) from vector_data')
+    print(result.fetchall()[0][0])
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 2:
+        if sys.argv[1] == 'count':
+            count_records()
+            sys.exit(0)
     logging.basicConfig(filename="vector.log", level=logging.DEBUG)
     logger = logging.getLogger()
     main(logger)
