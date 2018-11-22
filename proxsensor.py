@@ -53,12 +53,6 @@ def collect(robot, conn):
     conn.execute("INSERT INTO vector_data (image, prox) VALUES (?, ?)", (image, prox))
 
 
-def get_robot():
-    robot = 
-    robot.connect()
-    return robot
-
-
 def should_read_sensors(robot):
     if not robot.status:
         print("Vector's status isn't available")
