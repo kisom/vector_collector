@@ -119,7 +119,7 @@ def main(logger=None):
             requires_behavior_control=False,
         ) as robot:
             try:
-                try_collecting(conn)
+                try_collecting(conn, robot)
             except Exception as esc:
                 logging.debug(
                     "exception while trying collect:\n{}\n{}".format(
