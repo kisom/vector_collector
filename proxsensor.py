@@ -9,6 +9,7 @@ import random
 import sqlite3
 import sys
 import time
+import traceback
 
 SCHEMA = r"""CREATE TABLE IF NOT EXISTS vector_data (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,12 +67,9 @@ def should_read_sensors(robot):
     return True
 
 
-def try_collecting(conn):
+def try_collecting(conn, robot):
     logging.info("connecting to vector")
     delay = 3600
-    with anki_vector.Robot(
-        default_logging=False, enable_vision_mode=True, enable_camera_feed=True
-    ) as robot:
         delay = collector(conn, robot)
     logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), delay))
     time.sleep(delay)
@@ -89,7 +87,7 @@ def collector(conn, robot):
         print("battery voltage: {0}".format(battery_state.battery_volts))
 
     print("connected!")
-    sleep = 10
+    sleep = 1
     if should_read_sensors(robot):
         print("collecting sensor data")
         collect(robot, conn)
@@ -110,12 +108,19 @@ def main(logger=None):
 
     conn = get_database_conn()
     while True:
-        try:
-            try_collecting(conn)
-        except Exception as esc:
-            print(esc)
-        finally:
-            time.sleep(60)  # time for the error to clear up
+        with anki_vector.Robot(
+            default_logging=False,
+            enable_vision_mode=True,
+            enable_camera_feed=True,
+            requires_behavior_control=False
+        ) as robot:        
+            try:
+                try_collecting(conn)
+            except Exception as esc:
+                logging.debug('exception while trying collect:\n{}\n{}'.format(esc, traceback.format_exc()))
+                print(esc)
+            finally:
+                time.sleep(60)  # time for the error to clear up
 
 
 def count_records():
