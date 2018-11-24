@@ -19,7 +19,8 @@ SCHEMA = r"""CREATE TABLE IF NOT EXISTS vector_data (
 )
 """
 
-def get_database_conn(path='vector.db'):
+
+def get_database_conn(path="vector.db"):
     conn = sqlite3.connect("vector.db")
     conn.execute(SCHEMA)
     return conn
@@ -69,18 +70,21 @@ def should_read_sensors(robot):
 
 def try_collecting(conn, robot):
     logging.info("connecting to vector")
-    delay = 3600
-        delay = collector(conn, robot)
-    logging.debug("{} sleeping for {} seconds".format(time.strftime('%Y-%d-%m %H:%M:%S %z'), delay))
+    delay = collector(conn, robot)
+    logging.debug(
+        "{} sleeping for {} seconds".format(
+            time.strftime("%Y-%d-%m %H:%M:%S %z"), delay
+        )
+    )
     time.sleep(delay)
-    
+
 
 def collector(conn, robot):
 
     # This sleep is needed to give the SDK time to get sensor readings and
     # the status ready. This is an arbitrary choice of timeout that seems to
     # work.
-    print('getting robot state')
+    print("getting robot state")
     time.sleep(0.25)
     battery_state = robot.get_battery_state()
     if battery_state:
@@ -100,6 +104,7 @@ def collector(conn, robot):
 
     return sleep
 
+
 def main(logger=None):
     if not logger:
         logger = logging.getLogger()
@@ -112,12 +117,16 @@ def main(logger=None):
             default_logging=False,
             enable_vision_mode=True,
             enable_camera_feed=True,
-            requires_behavior_control=False
-        ) as robot:        
+            requires_behavior_control=False,
+        ) as robot:
             try:
                 try_collecting(conn)
             except Exception as esc:
-                logging.debug('exception while trying collect:\n{}\n{}'.format(esc, traceback.format_exc()))
+                logging.debug(
+                    "exception while trying collect:\n{}\n{}".format(
+                        esc, traceback.format_exc()
+                    )
+                )
                 print(esc)
             finally:
                 time.sleep(60)  # time for the error to clear up
@@ -125,13 +134,13 @@ def main(logger=None):
 
 def count_records():
     conn = get_database_conn()
-    result = conn.execute('select count(*) from vector_data')
+    result = conn.execute("select count(*) from vector_data")
     print(result.fetchall()[0][0])
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-        if sys.argv[1] == 'count':
+        if sys.argv[1] == "count":
             count_records()
             sys.exit(0)
     logging.basicConfig(filename="vector.log", level=logging.DEBUG)
