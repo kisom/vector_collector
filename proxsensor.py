@@ -115,7 +115,6 @@ def main(logger=None):
     while True:
         with anki_vector.Robot(
             default_logging=False,
-            enable_vision_mode=True,
             enable_camera_feed=True,
             requires_behavior_control=False,
         ) as robot:
